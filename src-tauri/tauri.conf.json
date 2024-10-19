@@ -3,12 +3,14 @@
   "productName": "run-tauri",
   "version": "0.1.0",
   "identifier": "com.run-tauri.app",
+
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
+
   "app": {
     "windows": [
       {
@@ -21,6 +23,9 @@
       "csp": null
     }
   },
+
+  
+
   "bundle": {
     "active": true,
     "targets": "all",
@@ -32,4 +37,5 @@
       "icons/icon.ico"
     ]
   }
+   
 }

@@ -1,49 +1,63 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
+import { useEffect, useState } from "react";
+
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const [command, setCommand] = useState("");
+  const [output, setOutput] = useState<any>([]);
+  const [isRunning, setIsRunning] = useState(false);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+
+
+ 
+  
+  async function run() {
+    try {
+      setIsRunning(true);
+      setOutput([]);
+      await invoke("run_cmd", { cmd: command });
+    } catch (error: any) {
+      setOutput((prev: any) => [...prev, `Error: ${error}`]);
+    } finally {
+      setIsRunning(false);
+    }
   }
 
+  useEffect(() => {
+    const unlisten1 = listen("cmd-output", (event) => {
+      setOutput((prev: any) => [...prev, event.payload]);
+    });
+
+    // Listen for command completion
+    const unlisten2 = listen("cmd-finished", (event) => {
+      setIsRunning(false);
+      setOutput((prev:any) => [
+        ...prev,
+        `Command finished with ${event.payload ? "success" : "error"}`,
+      ]);
+    });
+
+    return () => {
+      unlisten1.then((fn) => fn());
+      unlisten2.then((fn) => fn());
+    };
+  }, []);
   return (
     <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
+      <div className="">
         <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+          type="text"
+          value={command}
+          onChange={(e) => setCommand(e.target.value)}
         />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
+        <br />
+        <button onClick={run} disabled={isRunning}>
+          {isRunning ? "Wait..." : "Run"}
+        </button>
+      </div>
+      {output && <pre>{JSON.stringify(output, null, 2)}</pre>}
     </main>
   );
 }
